@@ -49,7 +49,7 @@ chrome.webRequest.onBeforeRequest.addListener(
             cancel = cancel || details.url.indexOf(entry) != -1;
         });
         if (cancel) {
-            const message = {url: details.url};
+            const message = {url: details.url, date: (new Date()).getTime()};
             chrome.runtime.sendMessage({requestBlocked: message});
 
             chrome.storage.local.get(['blockedRequests'], function(result) {
