@@ -51,6 +51,12 @@ chrome.webRequest.onBeforeRequest.addListener(
         if (cancel) {
             const message = {url: details.url};
             chrome.runtime.sendMessage({requestBlocked: message});
+
+            chrome.storage.local.get(['blockedRequests'], function(result) {
+                const blockedRequests = result.blockedRequests || [];
+                blockedRequests.push(message);
+                chrome.storage.local.set({blockedRequests});
+            });
         }
         return {cancel: cancel};
     },
@@ -60,7 +66,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 chrome.browserAction.onClicked.addListener((function () {
     chrome.tabs.create({url: chrome.extension.getURL('dashboard.html')}, function () {
-        console.log('Dashboard tab opened');
+        console.log('Opened Dashboard');
     });
 }));
 

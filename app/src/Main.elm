@@ -16,9 +16,13 @@ type alias Model =
     List String
 
 
-init : () -> ( Model, Cmd msg )
+type alias Flags =
+    List String
+
+
+init : Flags -> ( Model, Cmd msg )
 init flags =
-    ( [], Cmd.none )
+    ( flags, Cmd.none )
 
 
 type Msg
