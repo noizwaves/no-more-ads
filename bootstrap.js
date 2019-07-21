@@ -5,7 +5,10 @@ chrome.storage.local.get(['blockedRequests'], function (result) {
 
     const app = Elm.Main.init({
         node: document.getElementById('app'),
-        flags: blockedRequests
+        flags: {
+            blockedRequests: blockedRequests,
+            currently: (new Date()).getTime()
+        }
     });
 
     chrome.runtime.onMessage.addListener(function (request) {
