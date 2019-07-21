@@ -32,7 +32,9 @@ type alias BlockedRequestJson =
 
 
 type alias Flags =
-    { blockedRequests : List BlockedRequestJson, currently : Int }
+    { blockedRequests : List BlockedRequestJson
+    , currently : Int
+    }
 
 
 toBlockedRequest : BlockedRequestJson -> BlockedRequest
