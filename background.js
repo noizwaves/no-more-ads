@@ -70,4 +70,4 @@ chrome.browserAction.onClicked.addListener((function () {
     });
 }));
 
-console.log("Loaded backgroundWebRequest.js");
+console.log("Loaded background.js");

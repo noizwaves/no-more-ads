@@ -4,7 +4,7 @@
     "description": "Ad blocker for Chrome",
     "background": {
         "scripts": [
-            "backgroundWebRequest.js"
+            "background.js"
         ],
         "persistent": true
     },
