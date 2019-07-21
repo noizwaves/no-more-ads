@@ -3,11 +3,10 @@ port module Main exposing (main)
 import Browser
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
-import Json.Decode exposing (Decoder, Value, decodeValue, field, int, list, map, map2, string)
 import Time exposing (Posix, millisToPosix)
 
 
-port requestBlocked : (Value -> msg) -> Sub msg
+port requestBlocked : (BlockedRequestJson -> msg) -> Sub msg
 
 
 main =
@@ -24,60 +23,41 @@ type alias Model =
     List BlockedRequest
 
 
+type alias BlockedRequestJson =
+    { url : String
+    , date : Int
+    }
+
+
 type alias Flags =
-    Value
+    List BlockedRequestJson
 
 
-decodePosix : Decoder Posix
-decodePosix =
-    map millisToPosix int
-
-
-decodeBlockedRequest : Decoder BlockedRequest
-decodeBlockedRequest =
-    map2 BlockedRequest
-        (field "url" string)
-        (field "date" decodePosix)
+toBlockedRequest : BlockedRequestJson -> BlockedRequest
+toBlockedRequest json =
+    { url = json.url
+    , date = millisToPosix json.date
+    }
 
 
 init : Flags -> ( Model, Cmd msg )
 init flags =
     let
-        initRequests =
-            decodeValue (list decodeBlockedRequest) flags
-
         requests =
-            case initRequests of
-                Ok parsed ->
-                    parsed
-
-                Err _ ->
-                    []
+            List.map toBlockedRequest flags
     in
     ( requests, Cmd.none )
 
 
 type Msg
-    = RequestBlocked Value
+    = RequestBlocked BlockedRequestJson
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
-        RequestBlocked raw ->
-            let
-                decoded =
-                    decodeValue decodeBlockedRequest raw
-
-                newModel =
-                    case decoded of
-                        Ok blockedRequest ->
-                            model ++ [ blockedRequest ]
-
-                        Err _ ->
-                            model
-            in
-            ( newModel, Cmd.none )
+        RequestBlocked json ->
+            ( model ++ [ toBlockedRequest json ], Cmd.none )
 
 
 viewRequest : BlockedRequest -> Html Msg
@@ -91,5 +71,5 @@ view model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     requestBlocked RequestBlocked
