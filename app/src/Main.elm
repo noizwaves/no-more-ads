@@ -3,7 +3,7 @@ port module Main exposing (main)
 import Browser
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
-import Time exposing (Posix, millisToPosix)
+import Time exposing (Posix, millisToPosix, posixToMillis)
 
 
 port requestBlocked : (BlockedRequestJson -> msg) -> Sub msg
@@ -67,7 +67,13 @@ viewRequest request =
 
 view : Model -> Html Msg
 view model =
-    div [] (List.map viewRequest model)
+    let
+        newestFirst =
+            model
+                |> List.sortBy (\br -> br.date |> posixToMillis)
+                |> List.reverse
+    in
+    div [] (List.map viewRequest newestFirst)
 
 
 subscriptions : Model -> Sub Msg
