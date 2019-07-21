@@ -49,13 +49,19 @@ chrome.webRequest.onBeforeRequest.addListener(
             cancel = cancel || details.url.indexOf(entry) != -1;
         });
         if (cancel) {
-            const message = { url: details.url };
+            const message = {url: details.url};
             chrome.runtime.sendMessage({requestBlocked: message});
         }
-        return { cancel: cancel };
+        return {cancel: cancel};
     },
-    { urls: ["<all_urls>"] },
+    {urls: ["<all_urls>"]},
     ["blocking"]
 );
+
+chrome.browserAction.onClicked.addListener((function () {
+    chrome.tabs.create({url: chrome.extension.getURL('dashboard.html')}, function () {
+        console.log('Dashboard tab opened');
+    });
+}));
 
 console.log("Loaded backgroundWebRequest.js");
