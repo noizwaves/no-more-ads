@@ -12,11 +12,10 @@ chrome.storage.local.get(['blockedRequests'], function (result) {
         flags: blockedUrls
     });
 
-    chrome.runtime.onMessage.addListener(
-        function (request) {
-            if (request.requestBlocked) {
-                app.ports.requestBlocked.send(request.requestBlocked.url);
-            }
-        });
+    chrome.runtime.onMessage.addListener(function (request) {
+        if (request.requestBlocked) {
+            app.ports.requestBlocked.send(request.requestBlocked.url);
+        }
+    });
 });
 
