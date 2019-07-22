@@ -1,7 +1,7 @@
 port module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, h3, text)
+import Html exposing (Html, div, h3, i, text)
 import Html.Attributes exposing (class)
 import Time exposing (Posix, every, millisToPosix, posixToMillis)
 
@@ -78,9 +78,18 @@ viewRequest request =
 
 viewRequestRange : String -> List BlockedRequest -> Html Msg
 viewRequestRange name requests =
+    let
+        content =
+            case requests of
+                [] ->
+                    [ i [] [ text "none" ] ]
+
+                _ ->
+                    List.map viewRequest requests
+    in
     div []
         [ h3 [] [ text name ]
-        , div [] (List.map viewRequest requests)
+        , div [] content
         ]
 
 
