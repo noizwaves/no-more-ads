@@ -28,6 +28,9 @@ type alias Model =
 type alias BlockedRequestJson =
     { url : String
     , date : Int
+    , pageHost : String
+    , pageTitle : String
+    , pageUrl : String
     }
 
 

@@ -70,11 +70,13 @@ chrome.webRequest.onBeforeRequest.addListener(
         if (cancel) {
             chrome.tabs.get(details.tabId, function(tab) {
                 const pageUrl = tab.url;
+                const pageHost = new URL(pageUrl).host;
                 const pageTitle = tab.title;
 
                 const message = {
                     url: details.url,
                     date: Math.floor(details.timeStamp),
+                    pageHost: pageHost,
                     pageUrl: pageUrl,
                     pageTitle: pageTitle,
                 };
