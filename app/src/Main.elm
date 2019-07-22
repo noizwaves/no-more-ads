@@ -1,7 +1,8 @@
 port module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, h3, i, text)
+import Dict
+import Html exposing (Html, div, h2, h3, i, text)
 import Html.Attributes exposing (class)
 import Time exposing (Posix, every, millisToPosix, posixToMillis)
 
@@ -15,6 +16,7 @@ main =
 
 type alias BlockedRequest =
     { url : String
+    , host : String
     , date : Posix
     }
 
@@ -27,10 +29,8 @@ type alias Model =
 
 type alias BlockedRequestJson =
     { url : String
+    , host : String
     , date : Int
-    , pageHost : String
-    , pageTitle : String
-    , pageUrl : String
     }
 
 
@@ -43,6 +43,7 @@ type alias Flags =
 toBlockedRequest : BlockedRequestJson -> BlockedRequest
 toBlockedRequest json =
     { url = json.url
+    , host = json.host
     , date = millisToPosix json.date
     }
 
@@ -93,8 +94,50 @@ viewRequestRange name requests =
         ]
 
 
-view : Model -> Html Msg
-view model =
+viewRequestsByHost : ( String, Int ) -> Html Msg
+viewRequestsByHost ( host, count ) =
+    div []
+        [ text "("
+        , text <| String.fromInt count
+        , text ") "
+        , text host
+        ]
+
+
+viewSummary : Model -> Html Msg
+viewSummary model =
+    let
+        reduceCount key dict =
+            let
+                updateF : Maybe Int -> Maybe Int
+                updateF mv =
+                    case mv of
+                        Nothing ->
+                            Just 1
+
+                        Just v ->
+                            Just (v + 1)
+            in
+            Dict.update key updateF dict
+
+        counts =
+            model.blockedRequests
+                |> List.map .host
+                |> List.foldr reduceCount Dict.empty
+                |> Dict.toList
+                |> List.sortBy (\( _, v ) -> v)
+                |> List.reverse
+
+        requestsByHost =
+            counts
+                |> List.map viewRequestsByHost
+    in
+    div []
+        (h2 [] [ text "Summary" ] :: requestsByHost)
+
+
+viewLog : Model -> Html Msg
+viewLog model =
     let
         newestFirst =
             model.blockedRequests
@@ -113,9 +156,18 @@ view model =
                 |> List.partition (\r -> posixToMillis r.date > now - (15 * 60 * 1000))
     in
     div []
-        [ viewRequestRange "Last minute" current
+        [ h2 [] [ text "Log" ]
+        , viewRequestRange "Last minute" current
         , viewRequestRange "Last 15 minutes" recent
         , viewRequestRange "Older than 15 minutes" old
+        ]
+
+
+view : Model -> Html Msg
+view model =
+    div []
+        [ viewSummary model
+        , viewLog model
         ]
 
 

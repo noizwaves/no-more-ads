@@ -69,12 +69,15 @@ chrome.webRequest.onBeforeRequest.addListener(
         const cancel = isBlocked(details);
         if (cancel) {
             chrome.tabs.get(details.tabId, function(tab) {
+                const host = new URL(details.url).host;
+
                 const pageUrl = tab.url;
                 const pageHost = new URL(pageUrl).host;
                 const pageTitle = tab.title;
 
                 const message = {
                     url: details.url,
+                    host: host,
                     date: Math.floor(details.timeStamp),
                     pageHost: pageHost,
                     pageUrl: pageUrl,
