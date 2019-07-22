@@ -42,20 +42,46 @@ const blacklist = [
     "://sync.outbrain.com/"
 ];
 
+const isBlocked = function (details) {
+    let cancel = false;
+    blacklist.forEach(function (entry) {
+        cancel = cancel || details.url.indexOf(entry) != -1;
+    });
+    return cancel
+};
+
+const addToStore = function (message) {
+    chrome.storage.local.get(['blockedRequests'], function (result) {
+        const blockedRequests = result.blockedRequests || [];
+        blockedRequests.push(message);
+        chrome.storage.local.set({blockedRequests});
+    });
+};
+
+const clearStore = function () {
+    chrome.storage.local.set({blockedRequests: []});
+};
+
+chrome.runtime.onInstalled.addListener(clearStore);
+
 chrome.webRequest.onBeforeRequest.addListener(
     function (details) {
-        var cancel = false;
-        blacklist.forEach(function (entry) {
-            cancel = cancel || details.url.indexOf(entry) != -1;
-        });
+        const cancel = isBlocked(details);
         if (cancel) {
-            const message = {url: details.url, date: (new Date()).getTime()};
-            chrome.runtime.sendMessage({requestBlocked: message});
+            chrome.tabs.get(details.tabId, function(tab) {
+                const pageUrl = tab.url;
+                const pageTitle = tab.title;
 
-            chrome.storage.local.get(['blockedRequests'], function(result) {
-                const blockedRequests = result.blockedRequests || [];
-                blockedRequests.push(message);
-                chrome.storage.local.set({blockedRequests});
+                const message = {
+                    url: details.url,
+                    date: Math.floor(details.timeStamp),
+                    pageUrl: pageUrl,
+                    pageTitle: pageTitle,
+                };
+
+                chrome.runtime.sendMessage({requestBlocked: message});
+
+                addToStore(message);
             });
         }
         return {cancel: cancel};
