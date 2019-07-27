@@ -42,12 +42,6 @@ type alias BlockedRequestJson =
     }
 
 
-type alias Flags =
-    { blockedRequests : List BlockedRequestJson
-    , currently : Int
-    }
-
-
 toBlockedRequest : BlockedRequestJson -> BlockedRequest
 toBlockedRequest json =
     { url = json.url
@@ -85,6 +79,25 @@ toLogEntries now value =
         |> List.map (toLogEntry now)
 
 
+
+-- Message
+
+
+type Msg
+    = RequestBlocked BlockedRequestJson
+    | Tick Posix
+
+
+
+-- Init
+
+
+type alias Flags =
+    { blockedRequests : List BlockedRequestJson
+    , currently : Int
+    }
+
+
 init : Flags -> ( Model, Cmd msg )
 init flags =
     let
@@ -102,9 +115,8 @@ init flags =
     ( model, Cmd.none )
 
 
-type Msg
-    = RequestBlocked BlockedRequestJson
-    | Tick Posix
+
+-- Update
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -119,6 +131,14 @@ update msg model =
 
         Tick time ->
             ( { model | currently = time }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ requestBlocked RequestBlocked
+        , every 1000 Tick
+        ]
 
 
 
@@ -232,14 +252,6 @@ view model =
     div []
         [ viewSummary model
         , viewLog model
-        ]
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ requestBlocked RequestBlocked
-        , every 1000 Tick
         ]
 
 
