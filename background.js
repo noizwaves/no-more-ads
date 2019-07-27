@@ -25,16 +25,14 @@ const isBlocked = function (details) {
     return cancel
 };
 
-const addToStore = function (message) {
-    chrome.storage.local.get(['blockedRequests'], function (result) {
-        const blockedRequests = result.blockedRequests || [];
-        blockedRequests.push(message);
-        chrome.storage.local.set({blockedRequests});
-    });
+const addToStore = function (message, blockedRequests) {
+    blockedRequests.push(message);
+    chrome.storage.local.set({blockedRequests});
 };
 
-const clearStore = function () {
-    chrome.storage.local.set({blockedRequests: []});
+const clearStore = function (blockedRequests) {
+    blockedRequests.splice(0, blockedRequests.length);
+    chrome.storage.local.set({blockedRequests});
 };
 
 
@@ -42,12 +40,14 @@ const clearStore = function () {
 
 const domains = [];
 
+const blockedRequests = [];
+
 
 /* Main */
 
 loadBlocklist(chrome.runtime.getURL("blocklists/hosts"), domains);
 
-chrome.runtime.onInstalled.addListener(clearStore);
+chrome.runtime.onInstalled.addListener(() => clearStore(blockedRequests));
 
 chrome.webRequest.onBeforeRequest.addListener(
     function (details) {
@@ -71,7 +71,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
                 chrome.runtime.sendMessage({requestBlocked: message});
 
-                addToStore(message);
+                addToStore(message, blockedRequests);
             });
         }
         return {cancel: cancel};
