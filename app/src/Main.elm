@@ -10,10 +10,6 @@ import Time exposing (Posix, every, millisToPosix, posixToMillis)
 port requestBlocked : (BlockedRequestJson -> msg) -> Sub msg
 
 
-main =
-    Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
-
-
 type alias BlockedRequest =
     { url : String
     , host : String
@@ -21,8 +17,21 @@ type alias BlockedRequest =
     }
 
 
+type Recency
+    = Current
+    | Recent
+    | Old
+
+
+type alias LogEntry =
+    { url : String
+    , recency : Recency
+    }
+
+
 type alias Model =
     { blockedRequests : List BlockedRequest
+    , log : List LogEntry
     , currently : Posix
     }
 
@@ -48,13 +57,54 @@ toBlockedRequest json =
     }
 
 
+toLogEntry : Posix -> BlockedRequest -> LogEntry
+toLogEntry now value =
+    let
+        age =
+            posixToMillis now - posixToMillis value.date
+
+        recency =
+            if age > (15 * 60 * 1000) then
+                Old
+
+            else if age > (60 * 1000) then
+                Recent
+
+            else
+                Current
+    in
+    { url = value.url
+    , recency = recency
+    }
+
+
+toLogEntries : Posix -> List BlockedRequest -> List LogEntry
+toLogEntries now value =
+    value
+        |> List.sortBy (\br -> br.date |> posixToMillis)
+        |> List.reverse
+        |> List.map (toLogEntry now)
+
+
 init : Flags -> ( Model, Cmd msg )
 init flags =
     let
         requests =
             flags.blockedRequests |> List.map toBlockedRequest
+
+        now =
+            flags.currently |> millisToPosix
+
+        log =
+            requests |> toLogEntries now
+
+        model =
+            { blockedRequests = requests
+            , log = log
+            , currently = now
+            }
     in
-    ( { blockedRequests = requests, currently = millisToPosix flags.currently }, Cmd.none )
+    ( model, Cmd.none )
 
 
 type Msg
@@ -66,32 +116,25 @@ update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
         RequestBlocked json ->
-            ( { model | blockedRequests = model.blockedRequests ++ [ toBlockedRequest json ] }, Cmd.none )
+            let
+                requests =
+                    model.blockedRequests ++ [ toBlockedRequest json ]
+
+                log =
+                    requests |> toLogEntries model.currently
+            in
+            ( { model | blockedRequests = requests, log = log }, Cmd.none )
 
         Tick time ->
-            ( { model | currently = time }, Cmd.none )
+            let
+                log =
+                    model.blockedRequests |> toLogEntries time
+            in
+            ( { model | currently = time, log = log }, Cmd.none )
 
 
-viewRequest : BlockedRequest -> Html Msg
-viewRequest request =
-    div [ class "blocked-request" ] [ text request.url ]
 
-
-viewRequestRange : String -> List BlockedRequest -> Html Msg
-viewRequestRange name requests =
-    let
-        content =
-            case requests of
-                [] ->
-                    [ i [] [ text "none" ] ]
-
-                _ ->
-                    List.map viewRequest requests
-    in
-    div []
-        [ h3 [] [ text name ]
-        , div [] content
-        ]
+-- View
 
 
 viewRequestsByHost : ( String, Int ) -> Html Msg
@@ -136,30 +179,55 @@ viewSummary model =
         (h2 [] [ text "Summary" ] :: requestsByHost)
 
 
+viewLogEntry : LogEntry -> Html Msg
+viewLogEntry request =
+    div [ class "blocked-request" ] [ text request.url ]
+
+
+viewRequestRange : Recency -> List LogEntry -> Html Msg
+viewRequestRange recency entries =
+    let
+        name =
+            case recency of
+                Current ->
+                    "Last minute"
+
+                Recent ->
+                    "Last 15 minutes"
+
+                Old ->
+                    "Older than 15 minutes"
+
+        content =
+            case entries of
+                [] ->
+                    [ i [] [ text "none" ] ]
+
+                _ ->
+                    List.map viewLogEntry entries
+    in
+    div []
+        [ h3 [] [ text name ]
+        , div [] content
+        ]
+
+
 viewLog : Model -> Html Msg
 viewLog model =
     let
-        newestFirst =
-            model.blockedRequests
-                |> List.sortBy (\br -> br.date |> posixToMillis)
-                |> List.reverse
-
-        now =
-            model.currently |> posixToMillis
-
         ( current, other ) =
-            newestFirst
-                |> List.partition (\r -> posixToMillis r.date > now - (60 * 1000))
+            model.log
+                |> List.partition (\r -> r.recency == Current)
 
         ( recent, old ) =
             other
-                |> List.partition (\r -> posixToMillis r.date > now - (15 * 60 * 1000))
+                |> List.partition (\r -> r.recency == Recent)
     in
     div []
         [ h2 [] [ text "Log" ]
-        , viewRequestRange "Last minute" current
-        , viewRequestRange "Last 15 minutes" recent
-        , viewRequestRange "Older than 15 minutes" old
+        , viewRequestRange Current current
+        , viewRequestRange Recent recent
+        , viewRequestRange Old old
         ]
 
 
@@ -177,3 +245,11 @@ subscriptions _ =
         [ requestBlocked RequestBlocked
         , every 1000 Tick
         ]
+
+
+
+-- Main
+
+
+main =
+    Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
