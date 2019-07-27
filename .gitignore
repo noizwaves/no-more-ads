@@ -1,3 +1,4 @@
 .idea/
+blocklists/*
 app.js
 elm-stuff

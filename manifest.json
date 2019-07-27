@@ -27,5 +27,8 @@
         "default_title": "No More Ads - Dashboard",
         "default_icon": "images/get_started32.png"
     },
+    "web_accessible_resources": [
+        "blocklists/hosts"
+    ],
     "manifest_version": 2
 }
