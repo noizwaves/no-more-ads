@@ -9,9 +9,7 @@
         "persistent": true
     },
     "permissions": [
-        "activeTab",
         "tabs",
-        "declarativeContent",
         "storage",
         "webRequest",
         "webRequestBlocking",
