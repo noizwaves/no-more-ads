@@ -31,7 +31,6 @@ type alias LogEntry =
 
 type alias Model =
     { blockedRequests : List BlockedRequest
-    , log : List LogEntry
     , currently : Posix
     }
 
@@ -95,12 +94,8 @@ init flags =
         now =
             flags.currently |> millisToPosix
 
-        log =
-            requests |> toLogEntries now
-
         model =
             { blockedRequests = requests
-            , log = log
             , currently = now
             }
     in
@@ -119,18 +114,11 @@ update msg model =
             let
                 requests =
                     model.blockedRequests ++ [ toBlockedRequest json ]
-
-                log =
-                    requests |> toLogEntries model.currently
             in
-            ( { model | blockedRequests = requests, log = log }, Cmd.none )
+            ( { model | blockedRequests = requests }, Cmd.none )
 
         Tick time ->
-            let
-                log =
-                    model.blockedRequests |> toLogEntries time
-            in
-            ( { model | currently = time, log = log }, Cmd.none )
+            ( { model | currently = time }, Cmd.none )
 
 
 
@@ -216,7 +204,8 @@ viewLog : Model -> Html Msg
 viewLog model =
     let
         ( current, other ) =
-            model.log
+            model.blockedRequests
+                |> toLogEntries model.currently
                 |> List.partition (\r -> r.recency == Current)
 
         ( recent, old ) =
