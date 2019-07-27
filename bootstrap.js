@@ -17,4 +17,3 @@ chrome.storage.local.get(['blockedRequests'], function (result) {
         }
     });
 });
-
