@@ -203,14 +203,21 @@ viewRequestRange recency entries =
 viewLog : Model -> Html Msg
 viewLog model =
     let
-        ( current, other ) =
+        entries =
             model.blockedRequests
                 |> toLogEntries model.currently
-                |> List.partition (\r -> r.recency == Current)
 
-        ( recent, old ) =
-            other
-                |> List.partition (\r -> r.recency == Recent)
+        current =
+            entries
+                |> List.filter (\r -> r.recency == Current)
+
+        recent =
+            entries
+                |> List.filter (\r -> r.recency == Recent)
+
+        old =
+            entries
+                |> List.filter (\r -> r.recency == Old)
     in
     div []
         [ h2 [] [ text "Log" ]
